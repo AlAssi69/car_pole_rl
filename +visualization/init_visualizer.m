@@ -14,12 +14,14 @@ fig = figure('Name', 'RL Training Monitor', 'Color', 'w', ...
 %% 1. Animation Subplot (Left Side)
 ax_anim = subplot(2, 3, [1, 4]); % Spans 2 rows
 hold(ax_anim, 'on'); grid(ax_anim, 'on'); axis(ax_anim, 'equal');
-xlim(ax_anim, [-3 3]); ylim(ax_anim, [-1.5 2]);
+% Use a reasonable initial view window for clarity
+view_width = 5.0;  % meters visible on each side
+xlim(ax_anim, [-view_width view_width]); ylim(ax_anim, [-1.5 2]);
 xlabel(ax_anim, 'Position (m)');
 title(ax_anim, 'System Animation');
 
 % Draw Ground
-line(ax_anim, [-5 5], [0 0], 'Color', 'k', 'LineWidth', 2);
+line(ax_anim, [-params.x_threshold params.x_threshold], [0 0], 'Color', 'k', 'LineWidth', 2);
 
 % Initialize Graphics Objects (Cart and Pole)
 % We create them once and just move them later
@@ -52,6 +54,7 @@ end
 
 %% Pack handles into a struct
 handles.fig = fig;
+handles.ax_anim = ax_anim; % Store axes handle for dynamic view updates
 handles.cart = h_cart;
 handles.pole = h_pole;
 handles.joint = h_joint;

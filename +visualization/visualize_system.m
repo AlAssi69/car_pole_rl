@@ -27,7 +27,7 @@ pole_y = params.L * cos(theta);
 
 %% Rendering
 % Draw Ground
-line([-5, 5], [0, 0], 'Color', 'k', 'LineWidth', 2);
+line([-params.x_threshold, params.x_threshold], [0, 0], 'Color', 'k', 'LineWidth', 2);
 
 % Draw Cart (Rectangle)
 rectangle('Position', [p - cart_w/2, 0, cart_w, cart_h], ...
@@ -43,7 +43,14 @@ line([p, pole_x], [pivot_y, pivot_y + pole_y], ...
 plot(p, pivot_y, 'ko', 'MarkerFaceColor', 'k', 'MarkerSize', 6);
 
 %% Formatting
-xlim([-3, 3]);
+axis equal;  % Make axes equal to prevent distortion
+
+% Use a reasonable view window centered on the cart for clarity
+% View window size: show about 5 meters on each side of the cart
+view_width = 5.0;  % meters visible on each side
+x_min = max(-params.x_threshold, p - view_width);
+x_max = min(params.x_threshold, p + view_width);
+xlim([x_min, x_max]);
 ylim([-1, 2]);
 title(sprintf('Cart-Pole System\nPosition: %.2f m | Angle: %.2f rad | Step: %d/%d', p, theta, step, max_steps));
 drawnow;
