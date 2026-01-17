@@ -45,13 +45,20 @@ state = [0; 0; 0.1; 0];
 time = 0;
 
 % 3. Setup Figures
-% Figure A: System Animation (The Cart & Pole)
+% Figure A: System Animation (The Cart & Pole) - Square on the left
+anim_size = 500;  % Square size (width = height)
+anim_left = 100;  % Distance from left edge of screen
+anim_bottom = 250;  % Distance from bottom edge of screen
 fig_anim = figure('Name', 'System Animation', 'Color', 'w', ...
-    'Position', [100, 500, 600, 400]);
+    'Position', [anim_left, anim_bottom, anim_size*1.2, anim_size]);
 
-% Figure B: State Plots (The Graphs)
+% Figure B: State Plots (The Graphs) - Rectangle on the right
+states_width = 600;  % Width of states figure
+states_height = 700;  % Height of states figure
+states_left = anim_left + anim_size*1.2 + 50;  % Position to the right of animation (50px gap)
+states_bottom = 80;  % Distance from bottom edge of screen
 fig_states = figure('Name', 'State Trajectories', 'Color', 'w', ...
-    'Position', [750, 100, 500, 800]);
+    'Position', [states_left, states_bottom, states_width, states_height]);
 
 % Initialize the 4x1 State Plots and get handles to lines
 state_lines = visualization.init_state_plots(fig_states);
