@@ -43,7 +43,7 @@ params = utils.get_sys_params();
 
 % 2. Initial State [p; p_dot; theta; theta_dot]
 % Start slightly tilted (0.1 rad) so we see it move
-state = [0; 0; 1; 0];
+state = [0; 0; 0.6; 0];
 time = 0;
 
 % 3. Setup Figures
@@ -107,7 +107,7 @@ for step = 1:max_steps
     
     % D. Update State Plots (Figure B)
     if isvalid(fig_states)
-        visualization.update_state_plots(state_lines, state, time);
+        visualization.update_state_plots(state_lines, state, time, u);
     end
     
     % E. Sync Speed
