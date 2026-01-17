@@ -12,6 +12,8 @@ function params = get_sys_params()
 %       dt - Time step for simulation (seconds)
 %       x_threshold - Limit for cart position (m)
 %       theta_threshold - Limit for pole angle (rad)
+%       v_threshold - Limit for cart velocity (m/s)
+%       omega_threshold - Limit for pole angular velocity (rad/s)
 
 %% Physical Parameters
 params.M = 1.0;       % Mass of the cart (kg)
@@ -23,6 +25,8 @@ params.b = 0.1;       % Coefficient of friction for cart (N/m/s)
 
 %% Simulation Settings
 params.dt = 0.02;     % Time step for RL/Simulation (seconds)
-params.x_threshold = 2.4;  % Limit for cart position
-params.theta_threshold = 12 * pi / 180; % Limit for pole angle (12 deg)
+params.x_threshold = 5;  % Limit for cart position
+params.theta_threshold = 360 * pi / 180; % Limit for pole angle (12 deg)
+params.v_threshold = 100.0;  % Limit for cart velocity (m/s)
+params.omega_threshold = 100.0;  % Limit for pole angular velocity (rad/s)
 end

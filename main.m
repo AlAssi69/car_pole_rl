@@ -43,7 +43,7 @@ params = utils.get_sys_params();
 
 % 2. Initial State [p; p_dot; theta; theta_dot]
 % Start slightly tilted (0.1 rad) so we see it move
-state = [0; 0; 0.1; 0];
+state = [0; 0; 1; 0];
 time = 0;
 
 % 3. Setup Figures
@@ -80,6 +80,23 @@ for step = 1:max_steps
     % B. Step Physics
     state = step_func(state, u, params);
     time = time + params.dt;
+    
+    % B.1. Check Termination Conditions
+    % Stop if position or angle exceed thresholds
+    if abs(state(1)) > params.x_threshold || abs(state(3)) > params.theta_threshold
+        fprintf('Simulation terminated: Position or angle exceeded threshold.\n');
+        fprintf('  Cart position: %.3f m (threshold: %.3f m)\n', state(1), params.x_threshold);
+        fprintf('  Pole angle: %.3f rad (threshold: %.3f rad)\n', state(3), params.theta_threshold);
+        break;
+    end
+    
+    % Stop if velocity or angular velocity exceed thresholds
+    if abs(state(2)) > params.v_threshold || abs(state(4)) > params.omega_threshold
+        fprintf('Simulation terminated: Velocity exceeded threshold.\n');
+        fprintf('  Cart velocity: %.3f m/s (threshold: %.3f m/s)\n', state(2), params.v_threshold);
+        fprintf('  Pole angular velocity: %.3f rad/s (threshold: %.3f rad/s)\n', state(4), params.omega_threshold);
+        break;
+    end
     
     % C. Visualize System (Figure A)
     if isvalid(fig_anim)
