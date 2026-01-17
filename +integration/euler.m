@@ -1,6 +1,6 @@
 function next_state = euler(current_state, action, params)
 % EULER - Simple Euler integration for speed in RL training
-% 
+%
 % Inputs:
 %   current_state - Current state vector [p; p_dot; theta; theta_dot]
 %   action - Control input (force)

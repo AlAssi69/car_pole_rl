@@ -1,6 +1,6 @@
 function dx = cart_pole_dynamics(x, u, params)
 % CART_POLE_DYNAMICS - Non-linear dynamics of the cart-pole system
-% 
+%
 % Inputs:
 %   x - State vector [p; p_dot; theta; theta_dot]
 %       x(1): Cart Position (p)

@@ -7,6 +7,8 @@
 
 clc; clear; close all;
 
+rng('default');
+
 %% Configuration
 % Choose your control strategy:
 % Option 1: Use a controller (control theory approach)
