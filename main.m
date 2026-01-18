@@ -38,6 +38,10 @@ step_func = @integration.rk4;
 % Simulation parameters
 max_steps = 500;
 
+% Visualization flags
+VISUALIZE_SYSTEM = false;   % Set to true to show cart-pole animation
+VISUALIZE_STATES = false;   % Set to true to show state trajectory plots
+
 %% 1. Load Parameters
 params = utils.get_sys_params();
 
@@ -46,24 +50,38 @@ params = utils.get_sys_params();
 state = [0; 0; 0.6; 0];
 time = 0;
 
-% 3. Setup Figures
-% Figure A: System Animation (The Cart & Pole) - Square on the left
-anim_size = 500;  % Square size (width = height)
-anim_left = 100;  % Distance from left edge of screen
-anim_bottom = 250;  % Distance from bottom edge of screen
-fig_anim = figure('Name', 'System Animation', 'Color', 'w', ...
-    'Position', [anim_left, anim_bottom, anim_size*1.2, anim_size]);
+% 3. Setup Figures (only if visualization is enabled)
+fig_anim = [];
+fig_states = [];
+state_lines = [];
 
-% Figure B: State Plots (The Graphs) - Rectangle on the right
-states_width = 600;  % Width of states figure
-states_height = 700;  % Height of states figure
-states_left = anim_left + anim_size*1.2 + 50;  % Position to the right of animation (50px gap)
-states_bottom = 80;  % Distance from bottom edge of screen
-fig_states = figure('Name', 'State Trajectories', 'Color', 'w', ...
-    'Position', [states_left, states_bottom, states_width, states_height]);
+if VISUALIZE_SYSTEM
+    % Figure A: System Animation (The Cart & Pole) - Square on the left
+    anim_size = 500;  % Square size (width = height)
+    anim_left = 100;  % Distance from left edge of screen
+    anim_bottom = 250;  % Distance from bottom edge of screen
+    fig_anim = figure('Name', 'System Animation', 'Color', 'w', ...
+        'Position', [anim_left, anim_bottom, anim_size*1.2, anim_size]);
+end
 
-% Initialize the 4x1 State Plots and get handles to lines
-state_lines = visualization.init_state_plots(fig_states);
+if VISUALIZE_STATES
+    % Figure B: State Plots (The Graphs) - Rectangle on the right
+    states_width = 600;  % Width of states figure
+    states_height = 700;  % Height of states figure
+    states_bottom = 80;  % Distance from bottom edge of screen
+    if VISUALIZE_SYSTEM
+        % Position to the right of animation if both are shown
+        states_left = anim_left + anim_size*1.2 + 50;  % Position to the right of animation (50px gap)
+    else
+        % Center it if only states are shown
+        states_left = 100;
+    end
+    fig_states = figure('Name', 'State Trajectories', 'Color', 'w', ...
+        'Position', [states_left, states_bottom, states_width, states_height]);
+    
+    % Initialize the 4x1 State Plots and get handles to lines
+    state_lines = visualization.init_state_plots(fig_states);
+end
 
 fprintf('Starting Simulation with: %s\n', strategy_name);
 fprintf('Press Ctrl+C to stop.\n\n');
@@ -99,20 +117,24 @@ for step = 1:max_steps
     end
     
     % C. Visualize System (Figure A)
-    if isvalid(fig_anim)
-        visualization.visualize_system(state, params, fig_anim, step, max_steps);
-    else
-        break; % Stop if window is closed
+    if VISUALIZE_SYSTEM
+        if isvalid(fig_anim)
+            visualization.visualize_system(state, params, fig_anim, step, max_steps);
+        else
+            break; % Stop if window is closed
+        end
     end
     
     % D. Update State Plots (Figure B)
-    if isvalid(fig_states)
+    if VISUALIZE_STATES && isvalid(fig_states)
         visualization.update_state_plots(state_lines, state, time, u);
     end
     
-    % E. Sync Speed
+    % E. Sync Speed (only if visualization is enabled)
     % Limit update rate slightly to keep animation smooth
-    pause(params.dt);
+    if VISUALIZE_SYSTEM || VISUALIZE_STATES
+        pause(params.dt);
+    end
 end
 
 fprintf('\nSimulation completed.\n');
