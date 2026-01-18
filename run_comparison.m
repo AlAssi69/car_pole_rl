@@ -9,13 +9,16 @@
 
 function results = run_comparison(varargin)
 %% Parse inputs
+% Load config for defaults
+config = utils.get_config();
+
 p = inputParser;
 addParameter(p, 'controllers', {'PD'}, @iscell);
 addParameter(p, 'policies', {}, @iscell);
-addParameter(p, 'max_steps', 500, @isnumeric);
-addParameter(p, 'initial_state', [0; 0; 0.1; 0], @isnumeric);
-addParameter(p, 'integration', 'rk4', @ischar);
-addParameter(p, 'visualize', false, @islogical);
+addParameter(p, 'max_steps', config.simulation.max_steps, @isnumeric);
+addParameter(p, 'initial_state', config.initial_state.evaluation, @isnumeric);
+addParameter(p, 'integration', config.simulation.integration_method, @ischar);
+addParameter(p, 'visualize', config.visualization.system, @islogical);
 parse(p, varargin{:});
 
 %% Setup
@@ -42,10 +45,10 @@ for i = 1:length(p.Results.controllers)
     name = p.Results.controllers{i};
     switch upper(name)
         case 'PD'
-            strategies{end+1} = controllers.PDController([-2, -2, -30, -5]);
+            strategies{end+1} = controllers.PDController(config.controller.PD.gains);
             strategy_names{end+1} = 'PD Controller';
         case 'LQR'
-            ctrl = controllers.LQRController(eye(4), 1.0);
+            ctrl = controllers.LQRController(config.controller.LQR.Q, config.controller.LQR.R);
             ctrl.initialize(params);
             strategies{end+1} = ctrl;
             strategy_names{end+1} = 'LQR Controller';
@@ -78,48 +81,48 @@ for s = 1:length(strategies)
     strategy = strategies{s};
     name = strategy_names{s};
     fprintf('\n[%d/%d] Running: %s\n', s, length(strategies), name);
-    
+
     % Initialize
     state = p.Results.initial_state;
     time = 0;
     trajectory = zeros(4, p.Results.max_steps);
     actions = zeros(1, p.Results.max_steps);
     times = zeros(1, p.Results.max_steps);
-    
+
     % Setup visualization if requested
     if p.Results.visualize
         fig = figure('Name', sprintf('Simulation: %s', name), ...
             'Position', [100 + 50*s, 100 + 50*s, 600, 400]);
         handles = visualization.init_visualizer(params);
     end
-    
+
     % Run simulation
     for step = 1:p.Results.max_steps
         % Compute action
         u = strategy.compute_action(state, params);
-        
+
         % Step simulation
         state = step_func(state, u, params);
         time = time + params.dt;
-        
+
         % Store data
         trajectory(:, step) = state;
         actions(step) = u;
         times(step) = time;
-        
+
         % Update visualization
         if p.Results.visualize && isvalid(handles.fig)
             visualization.update_visualizer(handles, state, time, params);
             pause(0.01);
         end
-        
+
         % Check for failure
         if abs(state(1)) > params.x_threshold || abs(state(3)) > params.theta_threshold
             fprintf('  Failed at step %d\n', step);
             break;
         end
     end
-    
+
     % Store results
     results.(matlab.lang.makeValidName(name)) = struct(...
         'name', name, ...
@@ -128,7 +131,7 @@ for s = 1:length(strategies)
         'times', times(1:step), ...
         'steps', step, ...
         'final_state', state);
-    
+
     fprintf('  Completed: %d steps\n', step);
 end
 

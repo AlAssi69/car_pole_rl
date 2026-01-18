@@ -7,34 +7,37 @@
 
 clc; clear; close all;
 
-rng('default');
+%% Load Configuration
+config = utils.get_config();
+
+% Set random seed
+rng(config.main.random_seed);
 
 %% Configuration
-% Choose your control strategy:
-% Option 1: Use a controller (control theory approach)
-USE_CONTROLLER = false;  % Set to false to use a policy instead
+% Choose your control strategy from config
+USE_CONTROLLER = config.main.use_controller;
 
 if USE_CONTROLLER
     % Available controllers:
     %   - controllers.PDController([Kp, Kd_p, Ktheta, Kd_theta])
     %   - controllers.LQRController(Q, R)
-    controller = controllers.PDController([-2, -2, -30, -5]);
-    % controller = controllers.LQRController(eye(4), 1.0);
+    controller = controllers.PDController(config.controller.PD.gains);
+    % controller = controllers.LQRController(config.controller.LQR.Q, config.controller.LQR.R);
     strategy_name = controller.get_name();
 else
     % Available policies:
     %   - policies.RandomPolicy(action_min, action_max)
-    %   - policies.DDPGPolicy(action_max)
+    %   - policies.DDPGPolicy(action_max, config)
 
     % Check if trained model exists
-    if exist('trained_ddpg_policy.mat', 'file')
+    if exist(config.training.save_file, 'file')
         fprintf('Loading trained DDPG Policy...\n');
-        d = load('trained_ddpg_policy.mat');
+        d = load(config.training.save_file);
         policy = d.policy;
         policy.is_training = false; % Disable noise for evaluation
     else
         fprintf('Using untrained DDPG Policy (Random weights)...\n');
-        policy = policies.DDPGPolicy(10);
+        policy = policies.DDPGPolicy([], config);
         policy.is_training = false; % Still disable noise for pure evaluation of weights
         % Or use RandomPolicy:
         % policy = policies.RandomPolicy(-10, 10);
@@ -43,25 +46,30 @@ else
     strategy_name = policy.get_name();
 end
 
-% Choose integration method:
-%   - integration.euler (fastest, least accurate)
-%   - integration.rk4 (balanced, recommended)
-%   - integration.ode45_integration (most accurate, slowest)
-step_func = @integration.rk4;
+% Integration method from config
+switch lower(config.simulation.integration_method)
+    case 'euler'
+        step_func = @integration.euler;
+    case 'rk4'
+        step_func = @integration.rk4;
+    case 'ode45'
+        step_func = @integration.ode45_integration;
+    otherwise
+        error('Unknown integration method: %s', config.simulation.integration_method);
+end
 
-% Simulation parameters
-max_steps = 500;
+% Simulation parameters from config
+max_steps = config.simulation.max_steps;
 
-% Visualization flags
-VISUALIZE_SYSTEM = false;   % Set to true to show cart-pole animation
-VISUALIZE_STATES = false;   % Set to true to show state trajectory plots
+% Visualization flags from config
+VISUALIZE_SYSTEM = config.visualization.system;
+VISUALIZE_STATES = config.visualization.states;
 
 %% 1. Load Parameters
 params = utils.get_sys_params();
 
-% 2. Initial State [p; p_dot; theta; theta_dot]
-% Start slightly tilted (0.1 rad) so we see it move
-state = [0; 0; 0.6; 0];
+% 2. Initial State [p; p_dot; theta; theta_dot] from config
+state = config.initial_state.evaluation;
 time = 0;
 
 % Initialize data storage for summary
@@ -76,7 +84,7 @@ state_lines = [];
 
 if VISUALIZE_SYSTEM
     % Figure A: System Animation (The Cart & Pole) - Square on the left
-    anim_size = 500;  % Square size (width = height)
+    anim_size = config.visualization.animation_size;
     anim_left = 100;  % Distance from left edge of screen
     anim_bottom = 250;  % Distance from bottom edge of screen
     fig_anim = figure('Name', 'System Animation', 'Color', 'w', ...
@@ -85,8 +93,8 @@ end
 
 if VISUALIZE_STATES
     % Figure B: State Plots (The Graphs) - Rectangle on the right
-    states_width = 600;  % Width of states figure
-    states_height = 700;  % Height of states figure
+    states_width = config.visualization.states_width;
+    states_height = config.visualization.states_height;
     states_bottom = 80;  % Distance from bottom edge of screen
     if VISUALIZE_SYSTEM
         % Position to the right of animation if both are shown

@@ -1,19 +1,32 @@
 % TRAIN_DDPG - Script to train the DDPG Agent
 clc; clear; close all;
 
-%% Configuration
-MAX_EPISODES = 200;
-MAX_STEPS = 500;
-PLOT_EVERY = 10;
-SAVE_FILE = 'trained_ddpg_policy.mat';
+%% Load Configuration
+config = utils.get_config();
+
+% Extract training parameters
+MAX_EPISODES = config.training.max_episodes;
+MAX_STEPS = config.training.max_steps_per_episode;
+PLOT_EVERY = config.training.plot_every;
+SAVE_FILE = config.training.save_file;
 
 % System Parameters
 params = utils.get_sys_params();
-step_func = @integration.rk4;
 
-% Initialize Policy
-% Action bound is typically high for force, e.g., 10N or 20N
-policy = policies.DDPGPolicy(30);
+% Integration method
+switch lower(config.simulation.integration_method)
+    case 'euler'
+        step_func = @integration.euler;
+    case 'rk4'
+        step_func = @integration.rk4;
+    case 'ode45'
+        step_func = @integration.ode45_integration;
+    otherwise
+        error('Unknown integration method: %s', config.simulation.integration_method);
+end
+
+% Initialize Policy (uses config internally)
+policy = policies.DDPGPolicy([], config);
 
 % Tracking
 episode_rewards = zeros(1, MAX_EPISODES);
@@ -25,8 +38,11 @@ fprintf('Episodes: %d, Max Steps: %d\n', MAX_EPISODES, MAX_STEPS);
 %% Training Loop
 for ep = 1:MAX_EPISODES
     % Reset Environment
-    % Random initial state: small random perturbations
-    state = [0; 0; 0.1*randn; 0]; % Start near upright
+    % Initial state from config with noise
+    init_state = config.initial_state.training;
+    noise_scale = config.initial_state.training_noise;
+    state = init_state + [noise_scale(1)*randn; noise_scale(2)*randn; ...
+                          noise_scale(3)*randn; noise_scale(4)*randn];
     policy.reset(); % Reset noise
 
     total_reward = 0;
@@ -38,23 +54,21 @@ for ep = 1:MAX_EPISODES
         % 2. Step Dynamics
         next_state = step_func(state, u, params);
 
-        % 3. Calculate Reward
-        % Goal: Upright (theta=0) and Center (x=0)
-        % Penalty for angle, distance, control effort
-        p = next_state(1);
-        theta = next_state(3);
-
-        % Reward function: -Cost
-        % Q = diag([1, 0.1, 10, 0.1])
-        % R = 0.01
-        reward = -(1.0 * p^2 + 0.1 * next_state(2)^2 + ...
-            10.0 * theta^2 + 0.1 * next_state(4)^2 + ...
-            0.001 * u^2);
+        % 3. Calculate Reward from config
+        % Reward = -(Q_weights * state^2 + R_weight * action^2) - failure_penalty
+        Q_weights = config.reward.Q_weights;
+        R_weight = config.reward.R_weight;
+        
+        reward = -(Q_weights(1) * next_state(1)^2 + ...
+                   Q_weights(2) * next_state(2)^2 + ...
+                   Q_weights(3) * next_state(3)^2 + ...
+                   Q_weights(4) * next_state(4)^2 + ...
+                   R_weight * u^2);
 
         % Failure penalty
         done = false;
-        if abs(p) > params.x_threshold || abs(theta) > params.theta_threshold
-            reward = reward - 100;
+        if abs(next_state(1)) > params.x_threshold || abs(next_state(3)) > params.theta_threshold
+            reward = reward - config.reward.failure_penalty;
             done = true;
         end
 

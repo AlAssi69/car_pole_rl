@@ -25,34 +25,46 @@ classdef DDPGPolicy < policies.Policy
     end
 
     methods
-        function obj = DDPGPolicy(action_bound)
+        function obj = DDPGPolicy(action_bound, config)
             % DDPGPOLICY - Constructor
-            if nargin < 1, action_bound = 10; end
+            % Inputs:
+            %   action_bound - (optional) Maximum action magnitude. If not provided, uses config.
+            %   config - (optional) Configuration structure. If not provided, loads from utils.get_config()
+            
+            % Load config if not provided
+            if nargin < 2
+                config = utils.get_config();
+            end
+            
+            % Use action_bound from config if not provided
+            if nargin < 1 || isempty(action_bound)
+                action_bound = config.ddpg.action_bound;
+            end
 
             obj.action_bound = action_bound;
             obj.is_training = true;
 
-            % Hyperparameters
-            obj.gamma = 0.99;
-            obj.tau = 0.005;
-            obj.actor_lr = 1e-4;
-            obj.critic_lr = 1e-3;
-            obj.batch_size = 64;
+            % Hyperparameters from config
+            obj.gamma = config.ddpg.gamma;
+            obj.tau = config.ddpg.tau;
+            obj.actor_lr = config.ddpg.actor_lr;
+            obj.critic_lr = config.ddpg.critic_lr;
+            obj.batch_size = config.ddpg.batch_size;
 
-            % Initialize Noise and Buffer
-            obj.noise = utils.OUNoise(0, 0.15, 0.2);
-            obj.buffer = utils.ReplayBuffer(100000);
+            % Initialize Noise and Buffer from config
+            obj.noise = utils.OUNoise(config.ddpg.noise.mu, ...
+                                      config.ddpg.noise.theta, ...
+                                      config.ddpg.noise.sigma, ...
+                                      config.ddpg.noise.dt);
+            obj.buffer = utils.ReplayBuffer(config.ddpg.buffer_capacity);
 
-            % Networks (Lazy initialization in first call or explicitly)
-            % State dim: 4, Action dim: 1
-            % Actor: 4 -> 64 -> 64 -> 1 (Tanh)
-            obj.actor = utils.SimpleNN([4, 64, 64, 1], {'relu', 'relu', 'tanh'});
-            obj.target_actor = utils.SimpleNN([4, 64, 64, 1], {'relu', 'relu', 'tanh'});
+            % Networks from config
+            obj.actor = utils.SimpleNN(config.ddpg.actor.layers, config.ddpg.actor.activations);
+            obj.target_actor = utils.SimpleNN(config.ddpg.actor.layers, config.ddpg.actor.activations);
             obj.target_actor.copy_from(obj.actor);
 
-            % Critic: (State+Action) 5 -> 64 -> 64 -> 1 (Linear)
-            obj.critic = utils.SimpleNN([5, 64, 64, 1], {'relu', 'relu', 'linear'});
-            obj.target_critic = utils.SimpleNN([5, 64, 64, 1], {'relu', 'relu', 'linear'});
+            obj.critic = utils.SimpleNN(config.ddpg.critic.layers, config.ddpg.critic.activations);
+            obj.target_critic = utils.SimpleNN(config.ddpg.critic.layers, config.ddpg.critic.activations);
             obj.target_critic.copy_from(obj.critic);
 
             obj.initialized = true;
