@@ -28,7 +28,7 @@ else
     % Available policies:
     %   - policies.RandomPolicy(action_min, action_max)
     %   - policies.DDPGPolicy(action_max, config)
-
+    
     % Check if trained model exists
     if exist(config.training.save_file, 'file')
         fprintf('Loading trained DDPG Policy...\n');
@@ -42,7 +42,7 @@ else
         % Or use RandomPolicy:
         % policy = policies.RandomPolicy(-10, 10);
     end
-
+    
     strategy_name = policy.get_name();
 end
 
@@ -105,7 +105,7 @@ if VISUALIZE_STATES
     end
     fig_states = figure('Name', 'State Trajectories', 'Color', 'w', ...
         'Position', [states_left, states_bottom, states_width, states_height]);
-
+    
     % Initialize the 4x1 State Plots and get handles to lines
     state_lines = visualization.init_state_plots(fig_states);
 end
@@ -132,24 +132,24 @@ for step = 1:max_steps
     else
         u = policy.compute_action(state, params);
     end
-
+    
     % Debug: Show action every N steps or at key milestones
     if ~VISUALIZE_SYSTEM && ~VISUALIZE_STATES
         if mod(step, 50) == 0 || step <= 5 || step == max_steps
             fprintf('[Step %d, t=%.3f s] Action: u=%.3f N\n', step, time, u);
         end
     end
-
+    
     % B. Step Physics
     state_prev = state;
     state = step_func(state, u, params);
     time = time + params.dt;
-
+    
     % Store trajectory data
     trajectory(:, step) = state;
     actions(step) = u;
     times(step) = time;
-
+    
     % Debug: Show state updates periodically
     if ~VISUALIZE_SYSTEM && ~VISUALIZE_STATES
         if mod(step, 50) == 0 || step <= 5 || step == max_steps
@@ -157,7 +157,7 @@ for step = 1:max_steps
                 state(1), state(2), state(3), state(4));
         end
     end
-
+    
     % B.1. Check Termination Conditions
     % Stop if position or angle exceed thresholds
     if abs(state(1)) > params.x_threshold || abs(state(3)) > params.theta_threshold
@@ -166,7 +166,7 @@ for step = 1:max_steps
         fprintf('  Pole angle: %.3f rad (threshold: ±%.3f rad)\n', state(3), params.theta_threshold);
         break;
     end
-
+    
     % Stop if velocity or angular velocity exceed thresholds
     if abs(state(2)) > params.v_threshold || abs(state(4)) > params.omega_threshold
         fprintf('\n[Step %d] Simulation terminated: Velocity exceeded threshold.\n', step);
@@ -174,7 +174,7 @@ for step = 1:max_steps
         fprintf('  Pole angular velocity: %.3f rad/s (threshold: ±%.3f rad/s)\n', state(4), params.omega_threshold);
         break;
     end
-
+    
     % C. Visualize System (Figure A)
     if VISUALIZE_SYSTEM
         if isvalid(fig_anim)
@@ -183,12 +183,12 @@ for step = 1:max_steps
             break; % Stop if window is closed
         end
     end
-
+    
     % D. Update State Plots (Figure B)
     if VISUALIZE_STATES && isvalid(fig_states)
         visualization.update_state_plots(state_lines, state, time, u);
     end
-
+    
     % E. Sync Speed (only if visualization is enabled)
     % Limit update rate slightly to keep animation smooth
     if VISUALIZE_SYSTEM || VISUALIZE_STATES

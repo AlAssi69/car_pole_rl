@@ -82,8 +82,8 @@ config.initial_state.evaluation = [0; 0; 0.6; 0];  % Initial state for evaluatio
 %% ========================================================================
 % VISUALIZATION SETTINGS
 % ========================================================================
-config.visualization.system = false;  % Show cart-pole animation
-config.visualization.states = false;  % Show state trajectory plots
+config.visualization.system = true;  % Show cart-pole animation
+config.visualization.states = true;  % Show state trajectory plots
 config.visualization.animation_size = 500;  % Size of animation window (pixels)
 config.visualization.states_width = 600;   % Width of states plot window
 config.visualization.states_height = 700;  % Height of states plot window
@@ -98,6 +98,6 @@ config.controller.LQR.R = 1.0;      % Control weighting scalar
 %% ========================================================================
 % MAIN SCRIPT SETTINGS
 % ========================================================================
-config.main.use_controller = false;  % true = use controller, false = use policy
+config.main.use_controller = true;  % true = use controller, false = use policy
 config.main.random_seed = 'default';  % Random seed for reproducibility
 end

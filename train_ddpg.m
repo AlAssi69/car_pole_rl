@@ -42,56 +42,56 @@ for ep = 1:MAX_EPISODES
     init_state = config.initial_state.training;
     noise_scale = config.initial_state.training_noise;
     state = init_state + [noise_scale(1)*randn; noise_scale(2)*randn; ...
-                          noise_scale(3)*randn; noise_scale(4)*randn];
+        noise_scale(3)*randn; noise_scale(4)*randn];
     policy.reset(); % Reset noise
-
+    
     total_reward = 0;
-
+    
     for step = 1:MAX_STEPS
         % 1. Action
         u = policy.compute_action(state, params);
-
+        
         % 2. Step Dynamics
         next_state = step_func(state, u, params);
-
+        
         % 3. Calculate Reward from config
         % Reward = -(Q_weights * state^2 + R_weight * action^2) - failure_penalty
         Q_weights = config.reward.Q_weights;
         R_weight = config.reward.R_weight;
         
         reward = -(Q_weights(1) * next_state(1)^2 + ...
-                   Q_weights(2) * next_state(2)^2 + ...
-                   Q_weights(3) * next_state(3)^2 + ...
-                   Q_weights(4) * next_state(4)^2 + ...
-                   R_weight * u^2);
-
+            Q_weights(2) * next_state(2)^2 + ...
+            Q_weights(3) * next_state(3)^2 + ...
+            Q_weights(4) * next_state(4)^2 + ...
+            R_weight * u^2);
+        
         % Failure penalty
         done = false;
         if abs(next_state(1)) > params.x_threshold || abs(next_state(3)) > params.theta_threshold
             reward = reward - config.reward.failure_penalty;
             done = true;
         end
-
+        
         % 4. Store and Train
         experience.state = state;
         experience.action = u;
         experience.reward = reward;
         experience.next_state = next_state;
         experience.done = done;
-
+        
         policy.update(experience);
-
+        
         state = next_state;
         total_reward = total_reward + reward;
-
+        
         if done
             break;
         end
     end
-
+    
     episode_rewards(ep) = total_reward;
     avg_rewards(ep) = mean(episode_rewards(max(1, ep-10):ep));
-
+    
     if mod(ep, PLOT_EVERY) == 0
         fprintf('Episode %d: Reward = %.2f, Avg(10) = %.2f\n', ...
             ep, total_reward, avg_rewards(ep));
